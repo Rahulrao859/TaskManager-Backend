@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -17,43 +16,37 @@ connectDB();
 const WEAK_JWT_SECRETS = ['your_super_secret_jwt_key_here', 'rahulrao1234_supersecret'];
 const WEAK_ENC_KEYS = ['your_32_character_encryption_key_', 'changethis32charkey1234567890123', 'default_32_char_key_replace_this!'];
 if (!process.env.JWT_SECRET || WEAK_JWT_SECRETS.includes(process.env.JWT_SECRET)) {
-    console.warn('\x1b[33m[SECURITY WARNING] JWT_SECRET is using a default/weak value. Please set a strong secret in your .env file.\x1b[0m');
+    console.warn('\x1b[33m[SECURITY WARNING] JWT_SECRET is using a default/weak value.\x1b[0m');
 }
 if (!process.env.ENCRYPTION_KEY || WEAK_ENC_KEYS.includes(process.env.ENCRYPTION_KEY)) {
-    console.warn('\x1b[33m[SECURITY WARNING] ENCRYPTION_KEY is using a default/weak value. Please set a strong 32-char key in your .env file.\x1b[0m');
+    console.warn('\x1b[33m[SECURITY WARNING] ENCRYPTION_KEY is using a default/weak value.\x1b[0m');
 }
 
 const app = express();
 
-// Security headers — crossOriginResourcePolicy must be 'cross-origin' for APIs
-// because the default 'same-origin' blocks cross-origin fetches from the browser
-// even when CORS headers are correctly set.
-app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-    crossOriginEmbedderPolicy: false, // allow cross-origin iframes/resources
-}));
+const CLIENT_ORIGIN = process.env.CLIENT_URL || 'http://localhost:5173';
 
-// CORS — must be before rate limiter so preflight OPTIONS requests are never blocked
-const corsOptions = {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    optionsSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
-
-// Handle preflight for all routes (Express 5 compatible — no wildcard app.options)
+// ── CORS must be the VERY FIRST middleware ─────────────────────────────────
+// Handles preflight (OPTIONS) and injects CORS headers on every response.
+// Placed before Helmet so nothing can strip or block these headers.
 app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', CLIENT_ORIGIN);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+
+    // Respond immediately to preflight and stop processing
     if (req.method === 'OPTIONS') {
-        res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-        return res.sendStatus(200);
+        return res.status(200).end();
     }
     next();
 });
+
+// Security headers (crossOriginResourcePolicy set to cross-origin for API use)
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false,
+}));
 
 // Rate limiting - 100 requests per 15 minutes
 const limiter = rateLimit({
