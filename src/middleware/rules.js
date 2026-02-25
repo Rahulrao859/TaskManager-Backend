@@ -4,7 +4,8 @@ const registerRules = [
     body('name')
         .trim()
         .notEmpty().withMessage('Name is required')
-        .isLength({ min: 2, max: 50 }).withMessage('Name must be 2–50 characters'),
+        .isLength({ min: 2, max: 50 }).withMessage('Name must be 2–50 characters')
+        .escape(), // prevent XSS via HTML-entity encoding
 
     body('email')
         .trim()
@@ -46,4 +47,24 @@ const taskRules = [
         .isIn(['todo', 'in-progress', 'done']).withMessage('Status must be todo, in-progress, or done'),
 ];
 
-module.exports = { registerRules, loginRules, taskRules };
+// For PUT (partial updates) — all fields are optional
+const updateTaskRules = [
+    body('title')
+        .optional()
+        .trim()
+        .notEmpty().withMessage('Title cannot be empty')
+        .isLength({ max: 100 }).withMessage('Title cannot exceed 100 characters')
+        .escape(),
+
+    body('description')
+        .optional()
+        .trim()
+        .isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters')
+        .escape(),
+
+    body('status')
+        .optional()
+        .isIn(['todo', 'in-progress', 'done']).withMessage('Status must be todo, in-progress, or done'),
+];
+
+module.exports = { registerRules, loginRules, taskRules, updateTaskRules };

@@ -45,6 +45,7 @@ const register = async (req, res, next) => {
         }
 
         const user = await User.create({ name, email, password });
+
         sendTokenResponse(user, 201, res);
     } catch (error) {
         next(error);
@@ -74,7 +75,6 @@ const login = async (req, res, next) => {
                 message: 'Invalid email or password',
             });
         }
-
         sendTokenResponse(user, 200, res);
     } catch (error) {
         next(error);

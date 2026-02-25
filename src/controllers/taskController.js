@@ -90,16 +90,31 @@ const createTask = async (req, res, next) => {
     }
 };
 
-// @desc    Update a task
+// @desc    Update a task (partial update — only provided fields are changed)
 // @route   PUT /api/tasks/:id
 // @access  Private
 const updateTask = async (req, res, next) => {
     try {
-        const { title, description, status } = req.body;
+        // Build update object from only the fields present in req.body
+        // This prevents overwriting existing data with undefined/null
+        const allowedFields = ['title', 'description', 'status'];
+        const updateData = {};
+        allowedFields.forEach((field) => {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
+            }
+        });
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No valid fields provided for update',
+            });
+        }
 
         const task = await Task.findOneAndUpdate(
             { _id: req.params.id, user: req.user._id },
-            { title, description, status },
+            { $set: updateData },
             { new: true, runValidators: true }
         );
 

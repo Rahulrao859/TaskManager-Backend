@@ -13,6 +13,16 @@ const taskRoutes = require('./src/routes/taskRoutes');
 // Connect to MongoDB
 connectDB();
 
+// Warn if default/weak secrets are being used
+const WEAK_JWT_SECRETS = ['your_super_secret_jwt_key_here', 'rahulrao1234_supersecret'];
+const WEAK_ENC_KEYS = ['your_32_character_encryption_key_', 'changethis32charkey1234567890123', 'default_32_char_key_replace_this!'];
+if (!process.env.JWT_SECRET || WEAK_JWT_SECRETS.includes(process.env.JWT_SECRET)) {
+    console.warn('\x1b[33m[SECURITY WARNING] JWT_SECRET is using a default/weak value. Please set a strong secret in your .env file.\x1b[0m');
+}
+if (!process.env.ENCRYPTION_KEY || WEAK_ENC_KEYS.includes(process.env.ENCRYPTION_KEY)) {
+    console.warn('\x1b[33m[SECURITY WARNING] ENCRYPTION_KEY is using a default/weak value. Please set a strong 32-char key in your .env file.\x1b[0m');
+}
+
 const app = express();
 
 // Security headers
