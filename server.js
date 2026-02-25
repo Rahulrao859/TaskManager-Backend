@@ -28,6 +28,28 @@ const app = express();
 // Security headers
 app.use(helmet());
 
+// CORS — must be before rate limiter so preflight OPTIONS requests are never blocked
+const corsOptions = {
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
+
+// Handle preflight for all routes (Express 5 compatible — no wildcard app.options)
+app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+        return res.sendStatus(200);
+    }
+    next();
+});
+
 // Rate limiting - 100 requests per 15 minutes
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -37,12 +59,6 @@ const limiter = rateLimit({
     legacyHeaders: false,
 });
 app.use(limiter);
-
-// CORS - allow frontend origin with credentials
-app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    credentials: true,
-}));
 
 // Body parsers
 app.use(express.json({ limit: '10kb' }));
