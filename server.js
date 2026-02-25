@@ -25,8 +25,13 @@ if (!process.env.ENCRYPTION_KEY || WEAK_ENC_KEYS.includes(process.env.ENCRYPTION
 
 const app = express();
 
-// Security headers
-app.use(helmet());
+// Security headers — crossOriginResourcePolicy must be 'cross-origin' for APIs
+// because the default 'same-origin' blocks cross-origin fetches from the browser
+// even when CORS headers are correctly set.
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false, // allow cross-origin iframes/resources
+}));
 
 // CORS — must be before rate limiter so preflight OPTIONS requests are never blocked
 const corsOptions = {
