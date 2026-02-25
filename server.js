@@ -24,26 +24,13 @@ if (!process.env.ENCRYPTION_KEY || WEAK_ENC_KEYS.includes(process.env.ENCRYPTION
 
 const app = express();
 
-// Allowed origins: localhost for dev + any deployed frontend from CLIENT_URL env var
-const ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-];
-if (process.env.CLIENT_URL) {
-    ALLOWED_ORIGINS.push(process.env.CLIENT_URL);
-}
+const CLIENT_ORIGIN = process.env.CLIENT_URL || 'http://localhost:5173';
 
 // ── CORS must be the VERY FIRST middleware ─────────────────────────────────
 // Handles preflight (OPTIONS) and injects CORS headers on every response.
 // Placed before Helmet so nothing can strip or block these headers.
 app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && ALLOWED_ORIGINS.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    } else if (!origin) {
-        // Non-browser requests (Postman, server-to-server) – allow through
-        res.setHeader('Access-Control-Allow-Origin', '*');
-    }
+    res.setHeader('Access-Control-Allow-Origin', CLIENT_ORIGIN);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
